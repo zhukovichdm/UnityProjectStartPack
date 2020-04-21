@@ -72,7 +72,7 @@ namespace Scripts.Modules.CameraPlayer
             return direction;
         }
 
-        private void LookAt_Subscriber((GameObject target, CameraModes, DataScrollParameter, DataLimitationParameter) newParameters)
+        private void LookAt_Subscriber((GameObject target, CameraModes cameraMode, DataScrollParameter scrollParameter, DataLimitationParameter limitationParameter, bool cameraToMaxDistance) newParameters)
         {
             if(notAcceptNewParameters == false)
             {
@@ -88,7 +88,7 @@ namespace Scripts.Modules.CameraPlayer
                     bufferParameters = (cameraMode, dataScrollParameter, dataLimitationParameter);
                 }
 
-                // В режиме LooksAt перемещается mainCamera а не preposition, по это при переходе в Pivot режим нужно сбросить вращение камеры. 
+                // В режиме LooksAt перемещается mainCamera а не preposition, по этому при переходе в Pivot режим нужно сбросить вращение камеры. 
                 if (cameraMode == CameraModes.LooksAt && newParameters.Item2 == CameraModes.Pivot)
                     StartCoroutine(SmoothCameraRotationToPreposition());
 
@@ -104,10 +104,10 @@ namespace Scripts.Modules.CameraPlayer
                 }
             }
 
-            LookAt_Subscriber(newParameters.target);
+            LookAt_Subscriber(newParameters.target, newParameters.cameraToMaxDistance);
         }
 
-        private void LookAt_Subscriber(GameObject target)
+        private void LookAt_Subscriber(GameObject target, bool cameraToMaxDistance = false)
         {
             if (rigidbody) rigidbody.velocity = Vector3.zero;
 
@@ -119,10 +119,15 @@ namespace Scripts.Modules.CameraPlayer
                     needJerkingCorrection = false;
                 }
                 _targetCameraState.SetPositionFromTransform(target.transform);
-                preposition.localPosition = new Vector3(0, 0, dataScrollParameter.maxDistance);
+
+                if (cameraToMaxDistance)
+                    preposition.localPosition = new Vector3(0, 0, dataScrollParameter.maxDistance);
             }
             else // Задаем объект к которому стремится камера.
+            {
                 lookAtObject = target ? target.transform : preposition;
+
+            }
         }
 
         private void Awake()
@@ -133,6 +138,13 @@ namespace Scripts.Modules.CameraPlayer
             if (!ignoreLookAtAction)
                 GameActions.LookAt.Subscribe(LookAt_Subscriber);
             UserInput.InputEscapeAction.Subscribe(InputEscape_Subscriber);
+        }
+
+        private void Start()
+        {
+            // HACK: 
+            if (cameraMode == CameraModes.Pivot)
+                LookAt_Subscriber((head.gameObject, CameraModes.Pivot, dataScrollParameter, dataLimitationParameter, true));
         }
 
         private void OnDestroy()
@@ -172,11 +184,20 @@ namespace Scripts.Modules.CameraPlayer
         private void InputEscape_Subscriber()
         {
             if (!StopControling) return;
-
+            
             if (!ignoreEscape && Testing.TestingMode == false)
             {
                 if (bufferParameters != null)
                 {
+                    // HACK: Не знаю на сколько это правильно. Когда персонаж в режиме Pivot, не получалось сбросить камеру в стандартный пивот, по этому кидаю псевдо событие с этим пивотом вместо таргета.
+                    // **************************************
+                    if (bufferParameters.Value.Item1 == CameraModes.Pivot)
+                    {
+                        LookAt_Subscriber((head.gameObject, CameraModes.Pivot, bufferParameters.Value.Item2,bufferParameters.Value.Item3, true));
+                        return;
+                    }
+                    // **************************************
+                    
                     if (cameraMode == CameraModes.Pivot)
                     {
                         if (bufferParameters.Value.Item1 == CameraModes.Player)
@@ -198,7 +219,7 @@ namespace Scripts.Modules.CameraPlayer
                     _targetCameraState.SetRotation(bufferPlayerRotation);
                     _interpolatingCameraState.SetRotation(bufferPlayerRotation);
                 }
-
+                
                 LookAt_Subscriber(preposition.gameObject);
             }
         }
@@ -246,6 +267,9 @@ namespace Scripts.Modules.CameraPlayer
                     // transform.localPosition = head.transform.localPosition;
                     break;
                 case CameraModes.LooksAt:
+                    break;
+                case CameraModes.Pivot:
+                    StartCoroutine(SmoothReturnToHead());
                     break;
             }
         }

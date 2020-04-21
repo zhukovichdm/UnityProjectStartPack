@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inputButton: 0
   clickCount: 2
-  maxDistanceToMainCamera: 100
+  maxDistanceToMainCamera: 1000

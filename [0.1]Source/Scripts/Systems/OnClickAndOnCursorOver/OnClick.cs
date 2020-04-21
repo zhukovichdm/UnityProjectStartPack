@@ -1,4 +1,6 @@
-﻿using Pixeye.Unity;
+﻿using System;
+using System.Collections.Generic;
+using Pixeye.Unity;
 using Scripts.Component;
 using Scripts.Component.Actions;
 using Scripts.Data;
@@ -9,25 +11,34 @@ using UnityEngine.EventSystems;
 
 namespace Scripts.Behaviours.Other
 {
+    [Serializable]
+    public struct PivotParameter
+    {
+        public GameObject pivot;
+        public DataCameraParameters cameraParameters;
+        public bool cameraToMaxDistance;
+    }
+    
     [RequireComponent(typeof(ControlObjectInformation))]
     public class OnClick : MonoBehaviour, IPointerClickHandler
     {
-        [Foldout("Параметры для перемещения камеры.", true)] 
-        [SerializeField] private GameObject cameraPivot;
+        [Foldout("Параметры для перемещения камеры.", true)]
+        [SerializeField] private DataCameraParameters dataCameraParameters;
+        [SerializeField] private List<PivotParameter> pivotParameters = new List<PivotParameter>();
+//        [SerializeField] private List<GameObject> cameraPivots = new List<GameObject>();
         [SerializeField] private CameraModes cameraMode = CameraModes.LooksAt;
 
-        [Foldout("Основные параметры.", true)] 
+        [Foldout("Параметры выбора объекта.", true)] 
         [SerializeField] private bool ignoreClickOnChildren;
         [SerializeField] private bool updateObjectInformation;
         [SerializeField] private DataClickParameters clickParameters;
-        [SerializeField] private DataCameraParameters dataCameraParameters;
 
         [Foldout("Дополнительные параметры.", true)]
         [SerializeField] private ControlObjectInformation useThisObject;
 
         private Transform _mainCamera;
         private DataObjectInformation _dataObjectInformation;
-
+        
         private void Awake()
         {
             _mainCamera = Camera.main.transform;
@@ -37,10 +48,9 @@ namespace Scripts.Behaviours.Other
         public void OnPointerClick(PointerEventData eventData)
         {
             if (Cursor.lockState != CursorLockMode.None) return;
-            if (eventData.pointerEnter == gameObject || !ignoreClickOnChildren)
-                if (eventData.button == clickParameters.inputButton &&
-                    eventData.clickCount == clickParameters.clickCount)
-                    EventCall();
+            if (eventData.pointerEnter != gameObject && ignoreClickOnChildren) return;
+            if (eventData.button == clickParameters.inputButton && eventData.clickCount == clickParameters.clickCount)
+                MoveCameraToPivot(0,true,true);
         }
 
         private void OnMouseOver()
@@ -50,21 +60,41 @@ namespace Scripts.Behaviours.Other
             if (DoubleClick.Check(this, clickParameters.clickCount, (int) clickParameters.inputButton))
             {
                 // Если ignoreClickOnChilds то нужно вызывать EventCall в объекте полученном через рейкаст.
-                EventCall();
+                MoveCameraToPivot(0, true, true);
             }
         }
 
-        private void EventCall()
+        private void MoveCameraToPivot(int id, bool cameraToMaxDistance, bool needReset)
         {
             if (Vector3.Distance(transform.position, _mainCamera.position) < clickParameters.maxDistanceToMainCamera ==
                 false) return;
+            GameActions.TempAction.Publish((this, pivotParameters.Count, needReset));
 
             GameActions.UpdateObjectInformation.Publish(useThisObject
-                ? (updateObjectInformation, useThisObject.gameObject, objectInformation: useThisObject.dataObjectInformation)
-                : (updateObjectInformation, gameObject, objectInformation: _dataObjectInformation));
+                ? (updateObjectInformation, useThisObject.gameObject, useThisObject.dataObjectInformation)
+                : (updateObjectInformation, gameObject, _dataObjectInformation));
 
-            GameActions.LookAt.Publish((cameraPivot ? cameraPivot : gameObject, cameraMode,
-                dataCameraParameters.dataScrollParameter, dataCameraParameters.dataLimitationParameter));
+            var pivot = pivotParameters.Count > 0 ? pivotParameters[id].pivot : gameObject;
+            var data = pivotParameters[id].cameraParameters
+                ? pivotParameters[id].cameraParameters
+                : dataCameraParameters;
+
+            GameActions.LookAt.Publish((pivot, cameraMode, data.dataScrollParameter, data.dataLimitationParameter,
+                cameraToMaxDistance));
+            
+        }
+
+        // При выборе пивота.
+        public void MoveCameraToPivot(int id)
+        {
+            MoveCameraToPivot(id, pivotParameters[id].cameraToMaxDistance,false);
+//            MoveCameraToPivot(id, false, false);
+        }
+
+        // При выборе объекта.
+        public void MoveCameraToPivot()
+        {
+            MoveCameraToPivot(0, true, true);
         }
     }
 }

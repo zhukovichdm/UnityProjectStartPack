@@ -61,6 +61,12 @@ namespace Scripts.System
             Playback();
         }
 
+        public void SetSignAndPlayback(AnimationDirection direction)
+        {
+            Sign = direction;
+            Playback();
+        }
+        
         public void SetSign(AnimationDirection direction)
         {
             Sign = direction;

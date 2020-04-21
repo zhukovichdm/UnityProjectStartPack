@@ -169,7 +169,7 @@ public class Testing : MonoBehaviour
         yield return new WaitForSeconds(time);
         if (itemList.Count > currentItem)
         {
-            GameActions.LookAt.Publish((itemList[currentItem].gameObject, CameraModes.Pivot, dataCameraParameters.dataScrollParameter, dataCameraParameters.dataLimitationParameter));
+            GameActions.LookAt.Publish((itemList[currentItem].gameObject, CameraModes.Pivot, dataCameraParameters.dataScrollParameter, dataCameraParameters.dataLimitationParameter, true));
             GameActions.SelectedObjectForTesting.Publish(itemList[currentItem]);
             currentItem++;
         }

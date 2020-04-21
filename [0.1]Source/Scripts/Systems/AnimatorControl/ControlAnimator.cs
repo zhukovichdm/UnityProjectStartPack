@@ -9,7 +9,7 @@ namespace Scripts.Behaviours
     {
         public bool useInputButton;
         public PointerEventData.InputButton inputButton;
-        public List<SystemAnimator> systemAnimators;
+        public List<SystemAnimator> systemAnimators = new List<SystemAnimator>();
 
         private void Awake()
         {
@@ -21,7 +21,7 @@ namespace Scripts.Behaviours
         public void SetSignAll(bool value)
         {
             foreach (var systemAnimator in systemAnimators)
-                systemAnimator.SetSign(value ? AnimationDirection.ToEnd : AnimationDirection.ToBeginning);
+                systemAnimator.SetSignAndPlayback(value ? AnimationDirection.ToEnd : AnimationDirection.ToBeginning);
         }
 
         public void ReverseAll()
