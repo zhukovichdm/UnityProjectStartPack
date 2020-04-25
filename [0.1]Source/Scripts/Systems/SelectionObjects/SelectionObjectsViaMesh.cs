@@ -7,14 +7,13 @@ namespace SelectionObjects
 {
     public class SelectionObjectsViaMesh
     {
-        public SelectionObjectsViaMesh(string meshLayer, LayerMask maskForSelection)
+        public SelectionObjectsViaMesh(int meshLayer, LayerMask maskForSelection)
         {
             mainCamera = Camera.main;
             mesh = new Mesh();
             this.maskForSelection = maskForSelection;
 
-            var selectionMesh = new GameObject("[SelectionMesh]", typeof(MeshFilter))
-                {layer = LayerMask.NameToLayer(meshLayer)};
+            var selectionMesh = new GameObject("[SelectionMesh]", typeof(MeshFilter)) {layer = meshLayer};
             selectionMesh.AddComponent<Rigidbody>().isKinematic = true;
             selectionMesh.GetComponent<MeshFilter>().mesh = mesh;
             meshCollider = selectionMesh.AddComponent<MeshCollider>();
@@ -23,11 +22,10 @@ namespace SelectionObjects
             meshCollider.isTrigger = true;
             meshCollider.sharedMesh = mesh;
             selectionMesh.AddComponent<CollisionTrigger>().selectionObjectsViaMesh = this;
-
             SetMesh();
         }
 
-        public SelectionObjectsViaMesh(GUISkin skin, string meshLayer, LayerMask maskForSelection) : this(meshLayer,
+        public SelectionObjectsViaMesh(GUISkin skin, int meshLayer, LayerMask maskForSelection) : this(meshLayer,
             maskForSelection)
         {
             this.skin = skin;
@@ -156,11 +154,25 @@ namespace SelectionObjects
         public void SingleSelection()
         {
             var ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out var hit, mainCamera.farClipPlane, maskForSelection))
-                selectedObjects.Add(hit.collider.gameObject);
+            if (Physics.Raycast(ray, out var hit, mainCamera.farClipPlane))
+                Select(hit.transform.gameObject);
+
             selectionCompletedAction.Publish();
         }
 
+        public void Select(GameObject obj)
+        {
+            if (maskForSelection == (maskForSelection | (1 << obj.layer)))
+                selectedObjects.Add(obj);
+        }
+        
+        public void Deselect(GameObject obj)
+        {
+            if (maskForSelection == (maskForSelection | (1 << obj.layer)))
+                selectedObjects.Remove(obj);
+        }
+
+        
         private void UpdateMesh()
         {
             const float topZ = 0.0001f;
@@ -183,13 +195,6 @@ namespace SelectionObjects
 
         private void SetMesh()
         {
-//            mesh.vertices = new[]
-//            {
-//                new Vector3(1, 1, -1), new Vector3(1, 1, 1),
-//                new Vector3(-1, 1, -1), new Vector3(-1, 1, 1),
-//                new Vector3(1, -1, -1), new Vector3(1, -1, 1),
-//                new Vector3(-1, -1, -1), new Vector3(-1, -1, 1)
-//            };
             mesh.vertices = new Vector3[8];
             mesh.triangles = new[] {0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6, 5, 1, 7, 1, 3, 7, 0, 2, 6, 0, 6, 4};
         }

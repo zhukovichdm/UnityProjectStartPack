@@ -8,12 +8,12 @@ namespace SelectionObjects
 
         private void OnTriggerEnter(Collider other)
         {
-            selectionObjectsViaMesh.selectedObjects.Add(other.gameObject);
+            selectionObjectsViaMesh.Select(other.gameObject);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            selectionObjectsViaMesh.selectedObjects.Remove(other.gameObject);
+            selectionObjectsViaMesh.Deselect(other.gameObject);
         }
     }
 }
