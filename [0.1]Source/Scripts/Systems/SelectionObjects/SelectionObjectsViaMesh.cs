@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Utility.Toolbox;
 
 namespace SelectionObjects
@@ -45,6 +46,9 @@ namespace SelectionObjects
         private Rect rect;
         private readonly GUISkin skin;
 
+        private bool _canDrawing;
+
+
         /// <summary>
         /// Вызывать в OnGUI.
         /// Отрисовка зоны веделения.
@@ -52,9 +56,12 @@ namespace SelectionObjects
         public void DrawBox()
         {
             if (Input.GetButtonDown(SELECTION_BUTTON))
+            {
+                _canDrawing = !EventSystem.current.IsPointerOverGameObject();
                 boxStartPos = Input.mousePosition;
+            }
 
-            if (Input.GetButton(SELECTION_BUTTON))
+            if (_canDrawing && Input.GetButton(SELECTION_BUTTON))
             {
                 Vector2 boxEndPos = Input.mousePosition;
 
@@ -82,6 +89,8 @@ namespace SelectionObjects
         /// </summary>
         public void MultipleSelection_UppingMode()
         {
+            if (_canDrawing == false) return;
+
             var mousePosition = Input.mousePosition;
 
             if (Input.GetButtonDown(SELECTION_BUTTON))
@@ -105,8 +114,7 @@ namespace SelectionObjects
 
                 IEnumerator SelectionCompleted()
                 {
-                    yield return new WaitForEndOfFrame();
-                    yield return new WaitForEndOfFrame();
+                    yield return new WaitForFixedUpdate();
                     ResetMesh();
                     selectionCompletedAction.Publish();
                 }
@@ -121,6 +129,9 @@ namespace SelectionObjects
         /// </summary>
         public void MultipleSelection_DraggingMode()
         {
+            if (_canDrawing == false) return;
+
+            // BUG: объект не уходит из списка выбранных, если его сначала поместить в область выделания а затем убрать (не отпуская кнопку) 
             var mousePosition = Input.mousePosition;
 
             if (Input.GetButtonDown(SELECTION_BUTTON))
@@ -147,13 +158,14 @@ namespace SelectionObjects
                     ResetMesh();
             }
         }
-        
+
         /// <summary>
         /// При клике по объекту происходит выделение одного объекта.
         /// </summary>
         public void SingleSelection()
         {
             var ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            // TODO: добавить маску для рейкаста как при создании PhsTool Объекта
             if (Physics.Raycast(ray, out var hit, mainCamera.farClipPlane))
                 Select(hit.transform.gameObject);
 
@@ -163,16 +175,16 @@ namespace SelectionObjects
         public void Select(GameObject obj)
         {
             if (maskForSelection == (maskForSelection | (1 << obj.layer)))
-                selectedObjects.Add(obj);
-        }
-        
-        public void Deselect(GameObject obj)
-        {
-            if (maskForSelection == (maskForSelection | (1 << obj.layer)))
-                selectedObjects.Remove(obj);
+                if (selectedObjects.Contains(obj) == false)
+                    selectedObjects.Add(obj);
         }
 
-        
+        public void Deselect(GameObject obj)
+        {
+            selectedObjects.Remove(obj);
+        }
+
+
         private void UpdateMesh()
         {
             const float topZ = 0.0001f;
@@ -191,6 +203,7 @@ namespace SelectionObjects
             };
 
             meshCollider.sharedMesh = mesh;
+            meshCollider.enabled = true;
         }
 
         private void SetMesh()
@@ -201,8 +214,10 @@ namespace SelectionObjects
 
         private void ResetMesh()
         {
-            mesh.vertices = new Vector3[8];
-            meshCollider.sharedMesh = mesh;
+            meshCollider.enabled = false;
+
+            // mesh.vertices = new Vector3[8];
+            // meshCollider.sharedMesh = mesh;
         }
 
         public void DrawDebugLines()

@@ -7,8 +7,8 @@ namespace _Temp.Command
     {
         public readonly MyAction action = new MyAction();
 
-        private ICommand onStart;
-        private ICommand onFinish;
+        private ICommand _onStart;
+        private ICommand _onFinish;
 
         public Invoker()
         {
@@ -28,22 +28,22 @@ namespace _Temp.Command
 
         public void SetOnStart(ICommand command)
         {
-            if (onStart != null)
+            if (_onStart != null)
                 throw new Exception("Команда уже инициализирована");
-            onStart = command;
+            _onStart = command;
         }
 
         public void SetOnFinish(ICommand command)
         {
-            if (onStart != null)
+            if (_onStart != null)
                 throw new Exception("Команда уже инициализирована");
-            onFinish = command;
+            _onFinish = command;
         }
 
         public void Invoke()
         {
-            onStart?.Execute();
-            onFinish?.Execute();
+            _onStart?.Execute();
+            _onFinish?.Execute();
             action.Publish();
         }
     }
