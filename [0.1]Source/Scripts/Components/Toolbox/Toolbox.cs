@@ -2,15 +2,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using _Temp;
-using UnityEngine;
 using Utility.Singleton;
+using Utility.Toolbox;
 
-namespace Utility.Toolbox
+namespace Scripts.Components.Toolbox
 {
     public class Toolbox : SingletonForMono<Toolbox>
     {
-        private readonly Dictionary<Type, object> data = new Dictionary<Type, object>();
-        public static void RemoveAll() => Instance.data.Clear();
+        private static readonly MyAction SafelyGettingAction = new MyAction();
+
+        private readonly Dictionary<Type, object> _data = new Dictionary<Type, object>();
+
+        public static void RemoveAll()
+        {
+            Instance._data.Clear();
+            SafelyGettingAction.ClearListener();
+        }
 
         public static void AddManager(object obj)
         {
@@ -26,7 +33,7 @@ namespace Utility.Toolbox
 
         public static void Add(object obj)
         {
-            Instance.data.Add(obj.GetType(), obj);
+            Instance._data.Add(obj.GetType(), obj);
 
             if (obj is IAwake awake)
                 awake.OnAwake();
@@ -35,7 +42,7 @@ namespace Utility.Toolbox
         public static void Initialize()
         {
             // Получаем все значения в виде листа.
-            var keys = Instance.data.Values.ToList();
+            var keys = Instance._data.Values.ToList();
             for (int i = 0; i < keys.Count; i++)
             {
                 var item = keys[i];
@@ -44,23 +51,22 @@ namespace Utility.Toolbox
                 {
                     init.Initialization();
                     // Если метод инициализации добавил в тулбокс новое значение, то для их инициализации требуется обновить список ключей. 
-                    if (keys.Count != Instance.data.Count)
-                        keys = Instance.data.Values.ToList();
+                    if (keys.Count != Instance._data.Count)
+                        keys = Instance._data.Values.ToList();
                 }
             }
 
-//            foreach (var item in Instance.data)
-//            {
-//                if (item.Value is IInitialization init)
-//                {
-//                    init.Initialization();
-//                }
-//            }
+            SafelyGettingAction.Publish();
+        }
+
+        public static void SafelyGettingAfterInitialization(Action action)
+        {
+            SafelyGettingAction.Subscribe(action);
         }
 
         public static T Get<T>()
         {
-            Instance.data.TryGetValue(typeof(T), out var resolve);
+            Instance._data.TryGetValue(typeof(T), out var resolve);
             return (T) resolve;
         }
 

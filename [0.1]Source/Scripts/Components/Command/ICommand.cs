@@ -1,7 +1,9 @@
-﻿namespace Command
+﻿using System.Collections;
+
+namespace Scripts.Components.Command
 {
-    public interface ICommand
+    public interface ICommand : ISettable
     {
-        void Execute();
+        IEnumerator Execute();
     }
 }

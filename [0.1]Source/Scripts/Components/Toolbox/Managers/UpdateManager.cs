@@ -27,7 +27,7 @@ namespace Utility.Toolbox
             var go = new GameObject("[ManagerUpdate]");
             var mngComponent = go.AddComponent<ManagerUpdateComponent>();
             mngComponent.Setup(this);
-            Toolbox.Add(mngComponent);
+            Scripts.Components.Toolbox.Toolbox.Add(mngComponent);
         }
     }
 
@@ -39,7 +39,7 @@ namespace Utility.Toolbox
 
         public static void AddTo(object updatable)
         {
-            var mngUpdate = Toolbox.Get<UpdateManager>();
+            var mngUpdate = Scripts.Components.Toolbox.Toolbox.Get<UpdateManager>();
 
             if (updatable is ITick tick)
                 mngUpdate.ticks.Add(tick);
@@ -50,7 +50,7 @@ namespace Utility.Toolbox
 
         public static void RemoveFrom(object updatable)
         {
-            var mngUpdate = Toolbox.Get<UpdateManager>();
+            var mngUpdate = Scripts.Components.Toolbox.Toolbox.Get<UpdateManager>();
 
             if (updatable is ITick tick)
                 mngUpdate.ticks.Remove(tick);
@@ -71,7 +71,7 @@ namespace Utility.Toolbox
 
         public static void SubscribeTo(object updatable)
         {
-            var mngUpdate = Toolbox.Get<UpdateManager>();
+            var mngUpdate = Scripts.Components.Toolbox.Toolbox.Get<UpdateManager>();
 
             if (updatable is ITick tick)
             {
@@ -88,7 +88,7 @@ namespace Utility.Toolbox
 
         public static void UnSubscribeFrom(object updatable)
         {
-            var mngUpdate = Toolbox.Get<UpdateManager>();
+            var mngUpdate = Scripts.Components.Toolbox.Toolbox.Get<UpdateManager>();
 
             if (updatable is ITick tick)
             {
@@ -105,7 +105,7 @@ namespace Utility.Toolbox
 
         public static void SubscribeTo(Type type, Action action)
         {
-            var mngUpdate = Toolbox.Get<UpdateManager>();
+            var mngUpdate = Scripts.Components.Toolbox.Toolbox.Get<UpdateManager>();
 
             if (type == typeof(ITick))
             {
@@ -122,7 +122,7 @@ namespace Utility.Toolbox
 
         public static void UnSubscribeFrom(Type type, Action action)
         {
-            var mngUpdate = Toolbox.Get<UpdateManager>();
+            var mngUpdate = Scripts.Components.Toolbox.Toolbox.Get<UpdateManager>();
 
             if (type == typeof(ITick))
             {

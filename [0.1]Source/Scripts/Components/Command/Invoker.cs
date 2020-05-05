@@ -1,50 +1,150 @@
 ﻿using System;
-using Command;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using Utility.Toolbox;
 
-namespace _Temp.Command
+namespace Scripts.Components.Command
 {
-    public class Invoker
+    public partial class Invoker
+    {
+        public Invoker() => _invoke = ExecuteAction;
+        public Invoker(ISettable iSettable) => Initialize(iSettable);
+        public Invoker(ISettable iSettable, Invoker interrupt) => Initialize(iSettable, interrupt);
+        public Invoker(ISettable iSettable, List<Invoker> interrupt) => Initialize(iSettable, interrupt);
+        public Invoker(List<ISettable> iSettable) => Initialize(iSettable);
+        public Invoker(List<ISettable> iSettable, Invoker interrupt) => Initialize(iSettable, interrupt);
+        public Invoker(List<ISettable> iSettable, List<Invoker> interrupt) => Initialize(iSettable, interrupt);
+
+        public Invoker Initialize(ISettable iSettable, Invoker interrupt)
+        {
+            Initialize(iSettable);
+            Initialize(interrupt);
+            return this;
+        }
+
+        public Invoker Initialize(ISettable iSettable, List<Invoker> interrupt)
+        {
+            Initialize(iSettable);
+            Initialize(interrupt);
+            return this;
+        }
+
+        public Invoker Initialize(List<ISettable> iSettable, Invoker interrupt)
+        {
+            Initialize(iSettable);
+            Initialize(interrupt);
+            return this;
+        }
+
+        public Invoker Initialize(List<ISettable> iSettable, List<Invoker> interrupt)
+        {
+            Initialize(iSettable);
+            Initialize(interrupt);
+            return this;
+        }
+
+        public Invoker Initialize(ISettable iSettable)
+        {
+            Initialize(new List<ISettable> {iSettable});
+            return this;
+        }
+
+        public Invoker Initialize(List<ISettable> iSettable)
+        {
+            if (_iSettableList != null)
+                throw new Exception("Список ISettable'ов для прерывания уже инициализирован");
+            _iSettableList = iSettable;
+            _invoke = ExecuteISettableList;
+
+            // INFO: Получение объекта для запуска корутин. Т.к. используется Toolbox, то получение объекта и следовательно инициализация класса Invoker должно произойти до вызова Toolbox.Initialize().
+            // INFO: Если Invoker инициализирован в Static классе то этот класс желательно принудительно инициализировать до Toolbox.Initialize() вызвав любой метод.
+            Toolbox.Toolbox.SafelyGettingAfterInitialization(() =>
+                _managerUpdate = Toolbox.Toolbox.Get<ManagerUpdateComponent>());
+
+            return this;
+        }
+
+        public Invoker Initialize(Invoker interrupt)
+        {
+            Initialize(new List<Invoker> {interrupt});
+            return this;
+        }
+
+        public Invoker Initialize(List<Invoker> interrupt)
+        {
+            if (_interruptingList != null)
+                throw new Exception("Список Invoker'ов для прерывания уже инициализирован");
+
+            foreach (var invoker in interrupt)
+            {
+                if (invoker == this)
+                    throw new Exception("Нельзя добавлять Invoker в свой же список для прерывания ");
+            }
+
+            _interruptingList = interrupt;
+            return this;
+        }
+    }
+
+    public partial class Invoker : ISettable
     {
         public readonly MyAction action = new MyAction();
 
-        private ICommand _onStart;
-        private ICommand _onFinish;
+        private delegate void InvokeDelegate();
 
-        public Invoker()
+        private InvokeDelegate _invoke;
+        private List<ISettable> _iSettableList;
+        private List<Invoker> _interruptingList;
+        private Coroutine _coroutine;
+        private bool _isExecuting;
+        private ManagerUpdateComponent _managerUpdate;
+
+        public void Invoke() => _invoke();
+        private void ExecuteAction() => action.Publish();
+
+        private void ExecuteISettableList()
         {
+            InterruptThis();
+            InterruptList();
+            // if (_managerUpdate == null) _managerUpdate = Toolbox.Toolbox.Get<ManagerUpdateComponent>();
+            _coroutine = _managerUpdate.StartCoroutine(Executing(InterruptThis));
         }
 
-        public Invoker(ICommand startCommand)
+        public IEnumerator Executing(Action interrupter)
         {
-            SetOnStart(startCommand);
+            _isExecuting = true;
+            foreach (var iSettable in _iSettableList)
+            {
+                if (iSettable is IInterrupting interrupting)
+                    interrupting.Interrupter = interrupter;
+
+                if (iSettable is ICommand command)
+                {
+                    yield return command.Execute();
+                    continue;
+                }
+
+                if (iSettable is Invoker invoker)
+                {
+                    yield return invoker.Executing(interrupter);
+                }
+            }
+
+            ExecuteAction();
+            _isExecuting = false;
         }
 
-        public Invoker(ICommand startCommand, ICommand finishCommand)
+        private void InterruptThis()
         {
-            SetOnStart(startCommand);
-            SetOnFinish(finishCommand);
+            if (_isExecuting) _managerUpdate.StopCoroutine(_coroutine);
         }
 
-
-        public void SetOnStart(ICommand command)
+        private void InterruptList()
         {
-            if (_onStart != null)
-                throw new Exception("Команда уже инициализирована");
-            _onStart = command;
-        }
-
-        public void SetOnFinish(ICommand command)
-        {
-            if (_onStart != null)
-                throw new Exception("Команда уже инициализирована");
-            _onFinish = command;
-        }
-
-        public void Invoke()
-        {
-            _onStart?.Execute();
-            _onFinish?.Execute();
-            action.Publish();
+            if (_interruptingList == null) return;
+            foreach (var invoker in _interruptingList)
+                invoker.InterruptThis();
         }
     }
 }
