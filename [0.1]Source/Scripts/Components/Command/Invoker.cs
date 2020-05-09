@@ -16,41 +16,47 @@ namespace Scripts.Components.Command
         public Invoker(List<ISettable> iSettable, Invoker interrupt) => Initialize(iSettable, interrupt);
         public Invoker(List<ISettable> iSettable, List<Invoker> interrupt) => Initialize(iSettable, interrupt);
 
+        public Invoker Initialize(ISettable iSettable)
+        {
+            SetISettable(new List<ISettable> {iSettable});
+            return this;
+        }
+
         public Invoker Initialize(ISettable iSettable, Invoker interrupt)
         {
-            Initialize(iSettable);
-            Initialize(interrupt);
+            SetISettable(new List<ISettable> {iSettable});
+            SetInterrupt(new List<Invoker> {interrupt});
             return this;
         }
 
         public Invoker Initialize(ISettable iSettable, List<Invoker> interrupt)
         {
-            Initialize(iSettable);
-            Initialize(interrupt);
+            SetISettable(new List<ISettable> {iSettable});
+            SetInterrupt(interrupt);
+            return this;
+        }
+
+        public Invoker Initialize(List<ISettable> iSettable)
+        {
+            SetISettable(iSettable);
             return this;
         }
 
         public Invoker Initialize(List<ISettable> iSettable, Invoker interrupt)
         {
-            Initialize(iSettable);
-            Initialize(interrupt);
+            SetISettable(iSettable);
+            SetInterrupt(new List<Invoker> {interrupt});
             return this;
         }
 
         public Invoker Initialize(List<ISettable> iSettable, List<Invoker> interrupt)
         {
-            Initialize(iSettable);
-            Initialize(interrupt);
+            SetISettable(iSettable);
+            SetInterrupt(interrupt);
             return this;
         }
 
-        public Invoker Initialize(ISettable iSettable)
-        {
-            Initialize(new List<ISettable> {iSettable});
-            return this;
-        }
-
-        public Invoker Initialize(List<ISettable> iSettable)
+        private Invoker SetISettable(List<ISettable> iSettable)
         {
             if (_iSettableList != null)
                 throw new Exception("Список ISettable'ов для прерывания уже инициализирован");
@@ -65,13 +71,7 @@ namespace Scripts.Components.Command
             return this;
         }
 
-        public Invoker Initialize(Invoker interrupt)
-        {
-            Initialize(new List<Invoker> {interrupt});
-            return this;
-        }
-
-        public Invoker Initialize(List<Invoker> interrupt)
+        private Invoker SetInterrupt(List<Invoker> interrupt)
         {
             if (_interruptingList != null)
                 throw new Exception("Список Invoker'ов для прерывания уже инициализирован");
