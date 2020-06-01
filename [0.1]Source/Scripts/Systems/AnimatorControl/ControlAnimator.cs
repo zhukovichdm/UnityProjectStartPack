@@ -14,7 +14,10 @@ namespace Scripts.Behaviours
         private void Awake()
         {
             foreach (var systemAnimator in systemAnimators)
+            {
                 systemAnimator.Initialize(this);
+                systemAnimator.UpdateParameters();
+            }
         }
 
         // Использовалось раньше.
