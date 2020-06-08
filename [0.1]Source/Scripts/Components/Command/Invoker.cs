@@ -8,7 +8,7 @@ namespace Scripts.Components.Command
 {
     public partial class Invoker
     {
-        public Invoker() => _invoke = ExecuteAction;
+        public Invoker() => _isSettable = false;
         public Invoker(ISettable iSettable) => Initialize(iSettable);
         public Invoker(ISettable iSettable, Invoker interrupt) => Initialize(iSettable, interrupt);
         public Invoker(ISettable iSettable, List<Invoker> interrupt) => Initialize(iSettable, interrupt);
@@ -61,7 +61,7 @@ namespace Scripts.Components.Command
             if (_iSettableList != null)
                 throw new Exception("Список ISettable'ов для прерывания уже инициализирован");
             _iSettableList = iSettable;
-            _invoke = ExecuteISettableList;
+            _isSettable = true;
 
             // INFO: Получение объекта для запуска корутин. Т.к. используется Toolbox, то получение объекта и следовательно инициализация класса Invoker должно произойти до вызова Toolbox.Initialize().
             // INFO: Если Invoker инициализирован в Static классе то этот класс желательно принудительно инициализировать до Toolbox.Initialize() вызвав любой метод.
@@ -87,31 +87,60 @@ namespace Scripts.Components.Command
         }
     }
 
+    internal struct Void
+    {
+    }
+
     public partial class Invoker : ISettable
     {
         public readonly MyAction action = new MyAction();
 
-        private delegate void InvokeDelegate();
+        // private delegate void InvokeDelegate();
+        //
+        // private InvokeDelegate _invoke;
 
-        private InvokeDelegate _invoke;
+        private bool _isSettable;
+
         private List<ISettable> _iSettableList;
         private List<Invoker> _interruptingList;
         private Coroutine _coroutine;
         private bool _isExecuting;
         private ManagerUpdateComponent _managerUpdate;
 
-        public void Invoke() => _invoke();
+        public void Invoke()
+        {
+            if (_isSettable)
+            {
+                Interrupt();
+                _coroutine = _managerUpdate.StartCoroutine(Executing(InterruptThis));
+            }
+            else ExecuteAction();
+        }
+
+        public void Invoke<T>(T value)
+        {
+            if (_isSettable)
+            {
+                Interrupt();
+                _coroutine = _managerUpdate.StartCoroutine(Executing(value, InterruptThis));
+            }
+            else ExecuteAction();
+        }
+
         private void ExecuteAction() => action.Publish();
 
-        private void ExecuteISettableList()
+        private void Interrupt()
         {
             InterruptThis();
             InterruptList();
-            // if (_managerUpdate == null) _managerUpdate = Toolbox.Toolbox.Get<ManagerUpdateComponent>();
-            _coroutine = _managerUpdate.StartCoroutine(Executing(InterruptThis));
         }
 
-        public IEnumerator Executing(Action interrupter)
+        public IEnumerator Executing(Action interrupter = null)
+        {
+            yield return Executing<Void>(default, interrupter);
+        }
+
+        public IEnumerator Executing<T>(T value, Action interrupter = null)
         {
             _isExecuting = true;
             foreach (var iSettable in _iSettableList)
@@ -122,6 +151,13 @@ namespace Scripts.Components.Command
                 if (iSettable is ICommand command)
                 {
                     yield return command.Execute();
+                    continue;
+                }
+
+                if (iSettable is ICommandGettable<T> commandGettable)
+                {
+                    if (value.GetType() != typeof(Void))
+                        yield return commandGettable.Execute(value);
                     continue;
                 }
 
