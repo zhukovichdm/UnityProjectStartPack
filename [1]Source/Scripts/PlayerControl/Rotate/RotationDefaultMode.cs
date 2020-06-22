@@ -19,8 +19,8 @@ namespace Scripts.PlayerControl.Rotate
 
         public override void Invoke()
         {
-            if (Input.GetKey(key) == false) return;
-            GetDirection();
+            if (Input.GetKey(key))
+                GetDirection();
             Limitation();
             Rotation();
         }

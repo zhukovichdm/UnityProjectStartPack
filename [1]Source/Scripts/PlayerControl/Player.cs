@@ -28,7 +28,7 @@ namespace Scripts.PlayerControl
 
         private void OnValidate() => Setup();
 
-        private void Update()
+        private void FixedUpdate()
         {
             MovingMode.Invoke();
             rotationMode.Invoke();
