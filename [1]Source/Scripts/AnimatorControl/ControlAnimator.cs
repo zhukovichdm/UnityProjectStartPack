@@ -30,7 +30,7 @@ namespace Scripts.Behaviours
         public void ReverseAll()
         {
             foreach (var systemAnimator in systemAnimators)
-                systemAnimator.Reverse();
+                systemAnimator.ReverseAndPlayback();
         }
 
         public void OnPointerClick(PointerEventData eventData)

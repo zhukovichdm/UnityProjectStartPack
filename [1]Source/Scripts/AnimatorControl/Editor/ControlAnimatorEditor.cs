@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
 using Scripts.Behaviours;
 using Scripts.System;
 using Scripts.Utilities.Editor;
@@ -12,15 +11,13 @@ using UnityEngine.EventSystems;
 [CustomEditor(typeof(ControlAnimator))]
 public class ControlAnimatorEditor : Editor
 {
-    private ControlAnimator _controlAnimator;
-    private List<SystemAnimator> _systemAnimators;
+    private ControlAnimator ControlAnimator => (ControlAnimator) target;
+    private List<SystemAnimator> SystemAnimators => ControlAnimator.systemAnimators;
 
-    private void OnEnable()
-    {
-        _controlAnimator = (ControlAnimator) target;
-        _systemAnimators = _controlAnimator.systemAnimators;
-        UpdateParameters();
-    }
+//    private void OnEnable()
+//    {
+//        UpdateParameters();
+//    }
 
     public override void OnInspectorGUI()
     {
@@ -29,8 +26,10 @@ public class ControlAnimatorEditor : Editor
             DrawOther();
             DrawList();
         });
-        EditorUtility.SetDirty(_controlAnimator);
+        EditorUtility.SetDirty(ControlAnimator);
     }
+
+    private void SetDirty() => EditorUtility.SetDirty(ControlAnimator);
 
     private void DrawOther()
     {
@@ -38,11 +37,11 @@ public class ControlAnimatorEditor : Editor
 
         Box.PutInHorizontalBox(true, false, () =>
         {
-            _controlAnimator.useInputButton = EditorGUILayout.Toggle("useInputButton", _controlAnimator.useInputButton);
+            ControlAnimator.useInputButton = EditorGUILayout.Toggle("useInputButton", ControlAnimator.useInputButton);
 
-            if (_controlAnimator.useInputButton)
-                _controlAnimator.inputButton =
-                    (PointerEventData.InputButton) EditorGUILayout.Popup((int) _controlAnimator.inputButton,
+            if (ControlAnimator.useInputButton)
+                ControlAnimator.inputButton =
+                    (PointerEventData.InputButton) EditorGUILayout.Popup((int) ControlAnimator.inputButton,
                         buttonList);
         });
 
@@ -55,12 +54,7 @@ public class ControlAnimatorEditor : Editor
 
     private void DrawList()
     {
-//        int i = 0;
-//        while (i < _systemAnimators.Count)
-//        {
-//            i++;
-
-        for (var i = 0; i < _systemAnimators.Count; i++)
+        for (var i = 0; i < SystemAnimators.Count; i++)
         {
             Box.PutInVerticalBox(true, true, (() =>
             {
@@ -78,7 +72,7 @@ public class ControlAnimatorEditor : Editor
     private bool TopElements(int i)
     {
         bool flag = false;
-        var systemAnimator = _systemAnimators[i];
+        var systemAnimator = SystemAnimators[i];
 
         Box.PutInVerticalBox(true, true, () =>
         {
@@ -89,13 +83,13 @@ public class ControlAnimatorEditor : Editor
                     (Animator) EditorGUILayout.ObjectField(systemAnimator.animator, typeof(Animator), true);
                 if (GUILayout.Button("Remove", GUILayout.MaxWidth(70), GUILayout.Height(15)))
                 {
-                    _systemAnimators.RemoveAt(i);
+                    SystemAnimators.RemoveAt(i);
                     flag = true;
                 }
             });
 
             if (systemAnimator.animator && GUILayout.Button("UpdateParameters"))
-                _systemAnimators[i].UpdateParameters();
+                SystemAnimators[i].UpdateParameters();
         });
 
         return flag;
@@ -103,7 +97,7 @@ public class ControlAnimatorEditor : Editor
 
     private void MiddleElements(int i)
     {
-        var systemAnimator = _systemAnimators[i];
+        var systemAnimator = SystemAnimators[i];
         if (systemAnimator.animator == null || systemAnimator.allAnimatorParameters.Count == 0) return;
 
         systemAnimator.selectedParameter = EditorGUILayout.Popup("Parameters", systemAnimator.selectedParameter,
@@ -115,12 +109,12 @@ public class ControlAnimatorEditor : Editor
 
             Box.PutInHorizontalBox(true, false, () =>
             {
-                if (GUILayout.Toggle(systemAnimator.Sign == AnimationDirection.ToEnd, "To the end",
-                    new GUIStyle(GUI.skin.button)))
-                    systemAnimator.SetSign(AnimationDirection.ToEnd);
                 if (GUILayout.Toggle(systemAnimator.Sign == AnimationDirection.ToBeginning, "To the beginning",
                     new GUIStyle(GUI.skin.button)))
                     systemAnimator.SetSign(AnimationDirection.ToBeginning);
+                if (GUILayout.Toggle(systemAnimator.Sign == AnimationDirection.ToEnd, "To the end",
+                    new GUIStyle(GUI.skin.button)))
+                    systemAnimator.SetSign(AnimationDirection.ToEnd);
             });
         });
 
@@ -135,14 +129,27 @@ public class ControlAnimatorEditor : Editor
         Box.PutInHorizontalBox(true, false, () =>
         {
             if (GUILayout.Button("Reverse"))
-                systemAnimator.Reverse();
+            {
+                if (Application.isPlaying)
+                    systemAnimator.ReverseAndPlayback();
+                else
+                {
+                    systemAnimator.Reverse();
+                    if (systemAnimator.Sign == AnimationDirection.ToEnd) systemAnimator.SetState(1);
+                    else if (systemAnimator.Sign == AnimationDirection.ToBeginning) systemAnimator.SetState(0);
+                }
+            }
 
             if (GUILayout.Button(systemAnimator.isPlayback ? "Stop" : "Play current"))
             {
                 if (systemAnimator.isPlayback)
                     systemAnimator.isPlayback = false;
-                else
+                else if (Application.isPlaying)
+                {
+                    if (systemAnimator.Sign == AnimationDirection.ToEnd) systemAnimator.SetState(0);
+                    else if (systemAnimator.Sign == AnimationDirection.ToBeginning) systemAnimator.SetState(1);
                     systemAnimator.Playback();
+                }
             }
 
             if (GUILayout.Button("Break"))
@@ -157,14 +164,14 @@ public class ControlAnimatorEditor : Editor
         if (GUILayout.Button("Add"))
         {
             var systemAnimator = new SystemAnimator();
-            systemAnimator.Initialize(_controlAnimator);
-            _systemAnimators.Add(systemAnimator);
+            systemAnimator.Initialize(ControlAnimator);
+            SystemAnimators.Add(systemAnimator);
         }
     }
 
     private void UpdateParameters()
     {
-        foreach (var systemAnimator in _systemAnimators)
+        foreach (var systemAnimator in SystemAnimators)
             systemAnimator.UpdateParameters();
     }
 }

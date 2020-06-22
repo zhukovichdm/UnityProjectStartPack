@@ -7,8 +7,8 @@ namespace Scripts.System
 {
     public enum AnimationDirection
     {
-        ToEnd = -1,
-        ToBeginning = 1
+        ToEnd = 1,
+        ToBeginning = -1
     }
 
     [Serializable]
@@ -18,12 +18,14 @@ namespace Scripts.System
         public Animator animator;
         public List<string> allAnimatorParameters = new List<string>();
         public float frameRate = 1;
-        public float State { get; private set; } // От 0 до 1
-        // INFO:  [field: SerializeField] требуется что бы значение не сбрасывалось редактором в ноль.
-        [field: SerializeField] public AnimationDirection Sign { get; private set; } // 1 либо -1
         public int selectedParameter = 0;
         public bool playFromStart;
         public bool isPlayback;
+        private Coroutine _coroutine;
+
+        // INFO:  [field: SerializeField] требуется что бы значение не сбрасывалось редактором в ноль.
+        [field: SerializeField] public float State { get; private set; } // От 0 до 1
+        [field: SerializeField] public AnimationDirection Sign { get; private set; } // 1 либо -1
 
         public void Initialize(MonoBehaviour monoBehaviour)
         {
@@ -35,38 +37,43 @@ namespace Scripts.System
         public void Playback()
         {
             if (isPlayback == false && allAnimatorParameters.Count > selectedParameter)
-                mono.StartCoroutine(Playback());
+                _coroutine = mono.StartCoroutine(Playback());
 
             IEnumerator Playback()
             {
                 isPlayback = true;
-                const float tolerance = 0.01f;
+                const float tolerance = 0f;
                 while (isPlayback && (
-                           Math.Abs(State - 1f) > tolerance && Sign == AnimationDirection.ToBeginning ||
-                           Math.Abs(State) > tolerance && Sign == AnimationDirection.ToEnd))
+                           Math.Abs(State) >= tolerance && Sign == AnimationDirection.ToBeginning ||
+                           Math.Abs(State - 1f) >= tolerance && Sign == AnimationDirection.ToEnd))
                 {
                     var step = State + Time.deltaTime * (int) Sign * frameRate;
                     State = Mathf.Clamp(step, 0, 1f);
                     animator.SetFloat(allAnimatorParameters[selectedParameter], State);
-                    yield return new WaitForEndOfFrame();
+                    yield return null;
                 }
 
                 isPlayback = false;
             }
         }
 
+        public void ReverseAndPlayback()
+        {
+            Reverse();
+            Playback();
+        }
+
         public void Reverse()
         {
             Sign = (AnimationDirection) ((int) Sign * -1);
-            Playback();
         }
 
         public void SetSignAndPlayback(AnimationDirection direction)
         {
-            Sign = direction;
+            SetSign(direction);
             Playback();
         }
-        
+
         public void SetSign(AnimationDirection direction)
         {
             Sign = direction;
@@ -80,8 +87,10 @@ namespace Scripts.System
 
         public void Break()
         {
+            if (_coroutine != null) mono.StopCoroutine(_coroutine);
+            isPlayback = false;
             State = 0;
-            Sign = AnimationDirection.ToBeginning;
+            Sign = AnimationDirection.ToEnd;
         }
 
         public void UpdateParameters()
