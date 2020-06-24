@@ -44,14 +44,15 @@ namespace Scripts.System
                 isPlayback = true;
                 const float tolerance = 0f;
                 while (isPlayback && (
-                           Math.Abs(State) >= tolerance && Sign == AnimationDirection.ToBeginning ||
-                           Math.Abs(State - 1f) >= tolerance && Sign == AnimationDirection.ToEnd))
+                           Math.Abs(State) > tolerance && Sign == AnimationDirection.ToBeginning ||
+                           Math.Abs(State - 1f) > tolerance && Sign == AnimationDirection.ToEnd))
                 {
                     var step = State + Time.deltaTime * (int) Sign * frameRate;
                     State = Mathf.Clamp(step, 0, 1f);
                     animator.SetFloat(allAnimatorParameters[selectedParameter], State);
                     yield return null;
                 }
+                animator.SetFloat(allAnimatorParameters[selectedParameter], State);
 
                 isPlayback = false;
             }
