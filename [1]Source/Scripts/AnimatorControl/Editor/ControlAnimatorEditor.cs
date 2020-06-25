@@ -14,22 +14,19 @@ public class ControlAnimatorEditor : Editor
     private ControlAnimator ControlAnimator => (ControlAnimator) target;
     private List<SystemAnimator> SystemAnimators => ControlAnimator.systemAnimators;
 
-//    private void OnEnable()
-//    {
-//        UpdateParameters();
-//    }
-
     public override void OnInspectorGUI()
     {
+        Undo.RecordObject(ControlAnimator, "Changed Control Animator");
+        EditorGUI.BeginChangeCheck();
+
         Box.PutInVerticalBox(true, true, () =>
         {
             DrawOther();
             DrawList();
         });
-        EditorUtility.SetDirty(ControlAnimator);
-    }
 
-    private void SetDirty() => EditorUtility.SetDirty(ControlAnimator);
+        if (EditorGUI.EndChangeCheck()) EditorUtility.SetDirty(ControlAnimator);
+    }
 
     private void DrawOther()
     {
