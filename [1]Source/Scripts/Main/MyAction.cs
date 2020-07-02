@@ -17,8 +17,10 @@ public class MyAction
 
     public void Publish()
     {
-        foreach (var action in actions)
-            action.Invoke();
+        for (var i = 0; i < actions.Count; i++)
+        {
+            actions[i].Invoke();
+        }
     }
 
     public void ClearListener() => actions.Clear();
@@ -40,8 +42,10 @@ public class MyAction<T>
 
     public void Publish(T value)
     {
-        foreach (var action in actions)
-            action.Invoke(value);
+        for (var i = 0; i < actions.Count; i++)
+        {
+            actions[i].Invoke(value);
+        }
     }
 
     public void ClearListener() => actions.Clear();
