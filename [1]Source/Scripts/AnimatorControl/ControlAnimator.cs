@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Scripts.System;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,6 +19,12 @@ namespace Scripts.Behaviours
                 systemAnimator.Initialize(this);
                 systemAnimator.UpdateParameters();
             }
+        }
+
+        private void OnEnable()
+        {
+            foreach (var systemAnimator in systemAnimators)
+                systemAnimator.OnEnable();
         }
 
         // Использовалось раньше.

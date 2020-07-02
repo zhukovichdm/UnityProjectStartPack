@@ -30,6 +30,10 @@ namespace Scripts.System
         public void Initialize(MonoBehaviour monoBehaviour)
         {
             mono = monoBehaviour;
+        }
+
+        public void OnEnable()
+        {
             if (playFromStart && animator)
                 Playback();
         }
@@ -52,6 +56,7 @@ namespace Scripts.System
                     animator.SetFloat(allAnimatorParameters[selectedParameter], State);
                     yield return null;
                 }
+
                 animator.SetFloat(allAnimatorParameters[selectedParameter], State);
 
                 isPlayback = false;
