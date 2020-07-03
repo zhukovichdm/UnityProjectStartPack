@@ -40,7 +40,7 @@ namespace Scripts.System
 
         public void Playback()
         {
-            if (isPlayback == false && allAnimatorParameters.Count > selectedParameter)
+            if (isPlayback == false && allAnimatorParameters.Count > selectedParameter && animator.gameObject.activeInHierarchy)
                 _coroutine = mono.StartCoroutine(Playback());
 
             IEnumerator Playback()
