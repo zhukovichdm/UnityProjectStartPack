@@ -30,16 +30,28 @@ public class ControlAnimatorEditor : Editor
 
     private void DrawOther()
     {
-        var buttonList = Enum.GetNames(typeof(PointerEventData.InputButton)).ToArray();
-
         Box.PutInHorizontalBox(true, false, () =>
         {
             ControlAnimator.useInputButton = EditorGUILayout.Toggle("useInputButton", ControlAnimator.useInputButton);
-
             if (ControlAnimator.useInputButton)
+            {
+                var buttonList = Enum.GetNames(typeof(PointerEventData.InputButton)).ToArray();
                 ControlAnimator.inputButton =
-                    (PointerEventData.InputButton) EditorGUILayout.Popup((int) ControlAnimator.inputButton,
-                        buttonList);
+                    (PointerEventData.InputButton) EditorGUILayout.Popup((int) ControlAnimator.inputButton, buttonList);
+            }
+        });
+
+
+        Box.PutInHorizontalBox(true, false, () =>
+        {
+            var modeList = Enum.GetNames(typeof(AnimationModes)).ToArray();
+            EditorGUILayout.LabelField($"Reverse mode", EditorStyles.label, GUILayout.MaxWidth(100));
+            var popup = (AnimationModes) EditorGUILayout.Popup((int) ControlAnimator.mode, modeList);
+            if (popup != ControlAnimator.mode)
+            {
+                ControlAnimator.mode = popup;
+                ControlAnimator.Start();
+            }
         });
 
         EditorGUILayout.Space();
@@ -71,22 +83,46 @@ public class ControlAnimatorEditor : Editor
         bool flag = false;
         var systemAnimator = SystemAnimators[i];
 
-        Box.PutInVerticalBox(true, true, () =>
+        Box.PutInVerticalBox(true, false, () =>
         {
             Box.PutInHorizontalBox(true, false, () =>
             {
                 EditorGUILayout.LabelField($"Item {i}", EditorStyles.boldLabel, GUILayout.MaxWidth(80));
                 systemAnimator.animator =
                     (Animator) EditorGUILayout.ObjectField(systemAnimator.animator, typeof(Animator), true);
-                if (GUILayout.Button("Remove", GUILayout.MaxWidth(70), GUILayout.Height(15)))
+
+                if (GUILayout.Button("Remove", GUILayout.MaxWidth(70)))
                 {
                     SystemAnimators.RemoveAt(i);
                     flag = true;
                 }
             });
 
-            if (systemAnimator.animator && GUILayout.Button("UpdateParameters"))
-                SystemAnimators[i].UpdateParameters();
+            Box.PutInHorizontalBox(true, false, () =>
+            {
+                if (systemAnimator.animator && GUILayout.Button("UpdateParameters"))
+                    SystemAnimators[i].UpdateParameters();
+
+                if (GUILayout.Button("Up", GUILayout.MaxWidth(70)))
+                {
+                    if (i - 1 >= 0)
+                    {
+                        var buff = SystemAnimators[i - 1];
+                        SystemAnimators[i - 1] = SystemAnimators[i];
+                        SystemAnimators[i] = buff;
+                    }
+                }
+
+                if (GUILayout.Button("Down", GUILayout.MaxWidth(70)))
+                {
+                    if (i + 1 < SystemAnimators.Count)
+                    {
+                        var buff = SystemAnimators[i + 1];
+                        SystemAnimators[i + 1] = SystemAnimators[i];
+                        SystemAnimators[i] = buff;
+                    }
+                }
+            });
         });
 
         return flag;
@@ -149,8 +185,8 @@ public class ControlAnimatorEditor : Editor
                 }
             }
 
-            if (GUILayout.Button("Break"))
-                systemAnimator.Break();
+            if (GUILayout.Button("Reset"))
+                systemAnimator.Reset();
         });
     }
 

@@ -1,10 +1,20 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.Animations;
 using UnityEngine;
 
 namespace Scripts.System
 {
+    public static class AnimationControlExtensions
+    {
+        public static AnimationDirection Reverse(this AnimationDirection animDir) =>
+            (AnimationDirection) ((int) animDir * -1);
+
+        public static int Value(this AnimationDirection animDir) => (int) animDir;
+    }
+
     public enum AnimationDirection
     {
         ToEnd = 1,
@@ -14,6 +24,8 @@ namespace Scripts.System
     [Serializable]
     public class SystemAnimator
     {
+        public MyAction actionPlayback_End = new MyAction();
+
         public MonoBehaviour mono;
         public Animator animator;
         public List<string> allAnimatorParameters = new List<string>();
@@ -40,7 +52,8 @@ namespace Scripts.System
 
         public void Playback()
         {
-            if (isPlayback == false && allAnimatorParameters.Count > selectedParameter && animator.gameObject.activeInHierarchy)
+            if (isPlayback == false && allAnimatorParameters.Count > selectedParameter &&
+                animator.gameObject.activeInHierarchy)
                 _coroutine = mono.StartCoroutine(Playback());
 
             IEnumerator Playback()
@@ -60,6 +73,7 @@ namespace Scripts.System
                 animator.SetFloat(allAnimatorParameters[selectedParameter], State);
 
                 isPlayback = false;
+                actionPlayback_End.Publish();
             }
         }
 
@@ -71,7 +85,7 @@ namespace Scripts.System
 
         public void Reverse()
         {
-            Sign = (AnimationDirection) ((int) Sign * -1);
+            Sign = Sign.Reverse();
         }
 
         public void SetSignAndPlayback(AnimationDirection direction)
@@ -91,19 +105,21 @@ namespace Scripts.System
             State = value;
         }
 
-        public void Break()
+        public void Reset()
         {
             if (_coroutine != null) mono.StopCoroutine(_coroutine);
             isPlayback = false;
             State = 0;
-            Sign = AnimationDirection.ToEnd;
+            Sign = AnimationDirection.ToBeginning;
         }
 
         public void UpdateParameters()
         {
             allAnimatorParameters.Clear();
             if (animator == false) return;
-            foreach (var parameter in animator.parameters)
+            var controller = animator.runtimeAnimatorController as AnimatorController;
+            if (controller == null) return;
+            foreach (var parameter in controller.parameters)
                 allAnimatorParameters.Add(parameter.name);
         }
     }
