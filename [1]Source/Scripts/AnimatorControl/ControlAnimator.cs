@@ -31,8 +31,7 @@ namespace Scripts.Behaviours
 
         private void Awake()
         {
-            foreach (var redirection in GetComponentsInChildren<MouseEventsRedirection>())
-                redirection.Add(this);
+            MouseEventsRedirection.RedirectFromChildObjects(this);
 
             foreach (var systemAnimator in systemAnimators)
             {
@@ -63,8 +62,6 @@ namespace Scripts.Behaviours
             foreach (var systemAnimator in systemAnimators)
             foreach (var child in systemAnimator.animator.GetComponentsInChildren<Collider>())
                 _instancesId.Add(child.gameObject.GetInstanceID(), systemAnimator.animator.gameObject.GetInstanceID());
-
-            MouseEventsRedirection.RedirectFromChildObjects(this);
         }
 
         private void OnEnable()
@@ -73,10 +70,18 @@ namespace Scripts.Behaviours
                 systemAnimator.OnEnable();
         }
 
-        public void SetSignAll(bool value)
+        public void SetSignAndPlaybackAll(bool direction)
         {
             foreach (var systemAnimator in systemAnimators)
-                systemAnimator.SetSignAndPlayback(value ? AnimationDirection.ToEnd : AnimationDirection.ToBeginning);
+                systemAnimator.SetSignAndPlayback(direction
+                    ? AnimationDirection.ToEnd
+                    : AnimationDirection.ToBeginning);
+        }
+
+        public void SetSignAndPlaybackAll(AnimationDirection direction)
+        {
+            foreach (var systemAnimator in systemAnimators)
+                systemAnimator.SetSignAndPlayback(direction);
         }
 
         public void Reverse_AllMode()
@@ -118,26 +123,6 @@ namespace Scripts.Behaviours
             var selectedId = systemAnimators.FindIndex(x => x.animator.gameObject.GetInstanceID() == instanceId);
             systemAnimators[selectedId].ReverseAndPlayback();
         }
-
-//        public void OnPointerClick(PointerEventData eventData)
-//        {
-//            if (Cursor.lockState != CursorLockMode.None) return;
-//            if (eventData.button == inputButton && useInputButton)
-//            {
-//                switch (mode)
-//                {
-//                    case AnimationModes.All:
-//                        Reverse_AllMode();
-//                        break;
-//                    case AnimationModes.Queue:
-//                        Reverse_QueueMode_ToId(_instancesId[eventData.rawPointerPress.GetInstanceID()]);
-//                        break;
-//                    case AnimationModes.Target:
-//                        Reverse_TargetMode(_instancesId[eventData.rawPointerPress.GetInstanceID()]);
-//                        break;
-//                }
-//            }
-//        }
 
         private void OnMouseOver() => OnMouseOver_Redirected(gameObject);
 

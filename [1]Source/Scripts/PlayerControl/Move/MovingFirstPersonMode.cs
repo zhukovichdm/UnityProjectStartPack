@@ -3,14 +3,14 @@ using UnityEngine;
 
 namespace Scripts.PlayerControl.Move
 {
-    [CreateAssetMenu(fileName = "Move Physic Mode", menuName = "MyCustom/Player/Move Physic Mode")]
-    public class MovingPhysicMode : MovingMode
+    [CreateAssetMenu(fileName = "Move First Person Mode", menuName = "MyCustom/Player/Move First Person Mode")]
+    public class MovingFirstPersonMode : MovingMode
     {
         public KeyCode jump = KeyCode.Space;
         public float jumpForce = 5f;
         [Range(-2f, 2f)] public float height = 1.8f;
 
-        public MovingPhysicMode()
+        public MovingFirstPersonMode()
         {
             bodyScale = new Vector3(0.7f, 1f, 0.7f);
             UseGravity = true;

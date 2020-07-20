@@ -5,6 +5,7 @@ namespace Scripts.PlayerControl.Rotate
     [CreateAssetMenu(fileName = "Rotate Default Mode", menuName = "MyCustom/Player/Rotate Default Mode")]
     public class RotationDefaultMode : RotationMode
     {
+        public bool rotateTheCameraSeparately = true;
         private float _time;
         private Vector2 _temp;
         private Rigidbody _rb;
@@ -39,10 +40,18 @@ namespace Scripts.PlayerControl.Rotate
 
         private void Rotation()
         {
-            _rb.MoveRotation(Quaternion.Slerp(Body.rotation, Quaternion.Euler(direction * Vector3.up),
-                Time.fixedDeltaTime / smooth));
-            Cam.localRotation = Quaternion.Slerp(Cam.localRotation, Quaternion.Euler(direction * Vector3.right),
-                Time.fixedDeltaTime / smooth);
+            if (rotateTheCameraSeparately)
+            {
+                _rb.MoveRotation(Quaternion.Slerp(Body.rotation, Quaternion.Euler(direction * Vector3.up),
+                    Time.fixedDeltaTime / smooth));
+                Cam.localRotation = Quaternion.Slerp(Cam.localRotation, Quaternion.Euler(direction * Vector3.right),
+                    Time.fixedDeltaTime / smooth);
+            }
+            else
+            {
+                _rb.MoveRotation(Quaternion.Slerp(Body.rotation, Quaternion.Euler(direction),
+                    Time.fixedDeltaTime / smooth));
+            }
         }
     }
 }

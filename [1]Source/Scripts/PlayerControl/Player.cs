@@ -40,5 +40,11 @@ namespace Scripts.PlayerControl
             if (MovingMode) MovingMode.Setup(transform, cam);
             if (rotationMode) rotationMode.Setup(transform, cam);
         }
+
+        public void SetEnable(bool value)
+        {
+            enabled = value;
+            cam.gameObject.SetActive(value);
+        }
     }
 }
