@@ -22,7 +22,7 @@ namespace Scripts.System
     }
 
     [Serializable]
-    public class SystemAnimator
+    public class AnimatorSystem
     {
         public MyAction actionPlayback_End = new MyAction();
 

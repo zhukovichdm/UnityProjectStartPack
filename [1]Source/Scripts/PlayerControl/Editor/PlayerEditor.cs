@@ -18,11 +18,11 @@ namespace Scripts.PlayerControl.Editor
             var modesList = Player.selectableMovingModes.Select(x => x?.name).ToArray();
             Player.selectedMovingMode = EditorGUILayout.Popup(Player.selectedMovingMode, modesList);
             Player.Setup();
-            if (Application.isPlaying)
-                Player.MovingMode.SetCollider();
 
             if (Player.MovingMode == null)
                 EditorGUILayout.HelpBox("Не указан ни один из режимов перемещения", MessageType.Warning);
+            else if (Application.isPlaying)
+                Player.MovingMode.SetCollider();
 
             if (EditorGUI.EndChangeCheck()) EditorUtility.SetDirty(Player);
         }

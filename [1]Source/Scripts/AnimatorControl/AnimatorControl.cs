@@ -13,12 +13,21 @@ namespace Scripts.Behaviours
         Target
     }
 
-    public class ControlAnimator : MonoBehaviour, IMouseOver
+    [Serializable]
+    public struct AnimatorStruct
     {
+        public AnimatorSystem animatorSystem;
+        public List<AnimatorStruct> animatorStructs;
+    }
+
+    public class AnimatorControl : MonoBehaviour, IMouseOver
+    {
+        public bool ignoreUi = true;
         public bool useInputButton;
         public AnimationModes mode;
         public PointerEventData.InputButton inputButton;
-        public List<SystemAnimator> systemAnimators = new List<SystemAnimator>();
+        public List<AnimatorStruct> animatorStructs = new List<AnimatorStruct>();
+        public List<AnimatorSystem> animatorSystems = new List<AnimatorSystem>();
 
         // QueueMode
         private int _id;
@@ -33,10 +42,23 @@ namespace Scripts.Behaviours
         {
             MouseEventsRedirection.RedirectFromChildObjects(this);
 
-            foreach (var systemAnimator in systemAnimators)
+            animatorSystems.Clear();
+            GenerateList(animatorStructs);
+
+            foreach (var animatorSystem in animatorSystems)
             {
-                systemAnimator.Initialize(this);
-                systemAnimator.UpdateParameters();
+                animatorSystem.Initialize(this);
+                animatorSystem.UpdateParameters();
+            }
+        }
+
+        private void GenerateList(List<AnimatorStruct> structs)
+        {
+            foreach (var item in structs)
+            {
+                animatorSystems.Add(item.animatorSystem);
+                if (item.animatorStructs.Count != 0)
+                    GenerateList(item.animatorStructs);
             }
         }
 
@@ -50,44 +72,44 @@ namespace Scripts.Behaviours
             switch (mode)
             {
                 case AnimationModes.Queue:
-                    foreach (var systemAnimator in systemAnimators)
-                        systemAnimator.actionPlayback_End.Subscribe(Reverse_QueueMode_Next);
+                    foreach (var animatorSystem in animatorSystems)
+                        animatorSystem.actionPlayback_End.Subscribe(Reverse_QueueMode_Next);
                     break;
                 default:
-                    foreach (var systemAnimator in systemAnimators)
-                        systemAnimator.actionPlayback_End.Unsubscribe(Reverse_QueueMode_Next);
+                    foreach (var animatorSystem in animatorSystems)
+                        animatorSystem.actionPlayback_End.Unsubscribe(Reverse_QueueMode_Next);
                     break;
             }
 
-            foreach (var systemAnimator in systemAnimators)
-            foreach (var child in systemAnimator.animator.GetComponentsInChildren<Collider>())
-                _instancesId.Add(child.gameObject.GetInstanceID(), systemAnimator.animator.gameObject.GetInstanceID());
+            foreach (var animatorSystem in animatorSystems)
+            foreach (var child in animatorSystem.animator.GetComponentsInChildren<Collider>())
+                _instancesId.Add(child.gameObject.GetInstanceID(), animatorSystem.animator.gameObject.GetInstanceID());
         }
 
         private void OnEnable()
         {
-            foreach (var systemAnimator in systemAnimators)
-                systemAnimator.OnEnable();
+            foreach (var animatorSystem in animatorSystems)
+                animatorSystem.OnEnable();
         }
 
         public void SetSignAndPlaybackAll(bool direction)
         {
-            foreach (var systemAnimator in systemAnimators)
-                systemAnimator.SetSignAndPlayback(direction
+            foreach (var animatorSystem in animatorSystems)
+                animatorSystem.SetSignAndPlayback(direction
                     ? AnimationDirection.ToEnd
                     : AnimationDirection.ToBeginning);
         }
 
         public void SetSignAndPlaybackAll(AnimationDirection direction)
         {
-            foreach (var systemAnimator in systemAnimators)
-                systemAnimator.SetSignAndPlayback(direction);
+            foreach (var animatorSystem in animatorSystems)
+                animatorSystem.SetSignAndPlayback(direction);
         }
 
         public void Reverse_AllMode()
         {
-            foreach (var systemAnimator in systemAnimators)
-                systemAnimator.ReverseAndPlayback();
+            foreach (var animatorSystem in animatorSystems)
+                animatorSystem.ReverseAndPlayback();
         }
 
         /// <summary>
@@ -96,11 +118,11 @@ namespace Scripts.Behaviours
         /// <param name="instanceId">Id GameObject'а на котором находится Animator</param>
         public void Reverse_QueueMode_ToId(int instanceId)
         {
-            if (systemAnimators.Exists(x => x.animator.gameObject.GetInstanceID() == instanceId) == false) return;
-            var selectedId = systemAnimators.FindIndex(x => x.animator.gameObject.GetInstanceID() == instanceId);
-            _direction = systemAnimators[selectedId].Sign.Reverse();
+            var systemAnimator = GetSystemAnimator(instanceId);
+            if (systemAnimator == null) return;
+            _direction = systemAnimator.Sign.Reverse();
             _instanceId = instanceId;
-            systemAnimators[_id].SetSignAndPlayback(_direction);
+            animatorSystems[_id].SetSignAndPlayback(_direction);
         }
 
         /// <summary>
@@ -108,27 +130,35 @@ namespace Scripts.Behaviours
         /// </summary>
         private void Reverse_QueueMode_Next()
         {
-            if (_id + _direction.Value() >= systemAnimators.Count || _id + _direction < 0) return;
+            if (_id + _direction.Value() >= animatorSystems.Count || _id + _direction < 0) return;
             if (_direction == AnimationDirection.ToEnd &&
-                systemAnimators[_id].animator.gameObject.GetInstanceID() == _instanceId) return;
+                animatorSystems[_id].animator.gameObject.GetInstanceID() == _instanceId) return;
 //            if (_direction == -1 && systemAnimators[_id].animator.gameObject.GetInstanceID() == _instanceId) return;
-            systemAnimators[_id + _direction.Value()].ReverseAndPlayback();
+            animatorSystems[_id + _direction.Value()].ReverseAndPlayback();
             _id += _direction.Value();
         }
 
         /// <param name="instanceId">Id GameObject'а на котором находится Animator</param>
         public void Reverse_TargetMode(int instanceId)
         {
-            if (systemAnimators.Exists(x => x.animator.gameObject.GetInstanceID() == instanceId) == false) return;
-            var selectedId = systemAnimators.FindIndex(x => x.animator.gameObject.GetInstanceID() == instanceId);
-            systemAnimators[selectedId].ReverseAndPlayback();
+            var systemAnimator = GetSystemAnimator(instanceId);
+            systemAnimator?.ReverseAndPlayback();
+        }
+
+        public AnimatorSystem GetSystemAnimator(int instanceId)
+        {
+            if (animatorSystems.Exists(x => x.animator.gameObject.GetInstanceID() == instanceId) == false) return null;
+            var selectedId = animatorSystems.FindIndex(x => x.animator.gameObject.GetInstanceID() == instanceId);
+            return animatorSystems[selectedId];
         }
 
         private void OnMouseOver() => OnMouseOver_Redirected(gameObject);
 
         public void OnMouseOver_Redirected(GameObject target)
         {
+            if (ignoreUi && EventSystem.current.IsPointerOverGameObject()) return;
             if (Input.GetMouseButtonDown((int) inputButton) == false || useInputButton == false) return;
+            if (_instancesId.ContainsKey(target.GetInstanceID()) == false) return;
             switch (mode)
             {
                 case AnimationModes.All:

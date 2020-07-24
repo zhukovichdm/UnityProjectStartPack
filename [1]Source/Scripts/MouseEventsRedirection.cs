@@ -1,6 +1,15 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+public interface IMouseUpAsButton : IMouseEvent
+{
+    void OnMouseUpAsButton_Redirected(GameObject target);
+}
+
+public interface IMouseUp : IMouseEvent
+{
+    void OnMouseUp_Redirected(GameObject target);
+}
 
 public interface IMouseDown : IMouseEvent
 {
@@ -20,6 +29,11 @@ public interface IMouseExit : IMouseEvent
 public interface IMouseOver : IMouseEvent
 {
     void OnMouseOver_Redirected(GameObject target);
+}
+
+public interface IMouseDrag : IMouseEvent
+{
+    void OnMouseDrag_Redirected(GameObject target);
 }
 
 public interface IMouseEvent
@@ -48,6 +62,20 @@ public class MouseEventsRedirection : MonoBehaviour
             _mouseEvents.Add(mouseEvent);
     }
 
+    private void OnMouseUpAsButton()
+    {
+        foreach (var mouseEvent in _mouseEvents)
+            if (mouseEvent is IMouseUpAsButton iEvent)
+                iEvent.OnMouseUpAsButton_Redirected(gameObject);
+    }
+
+    public void OnMouseUp()
+    {
+        foreach (var mouseEvent in _mouseEvents)
+            if (mouseEvent is IMouseUp iEvent)
+                iEvent.OnMouseUp_Redirected(gameObject);
+    }
+
     public void OnMouseDown()
     {
         foreach (var mouseEvent in _mouseEvents)
@@ -74,5 +102,12 @@ public class MouseEventsRedirection : MonoBehaviour
         foreach (var mouseEvent in _mouseEvents)
             if (mouseEvent is IMouseOver iEvent)
                 iEvent.OnMouseOver_Redirected(gameObject);
+    }
+
+    private void OnMouseDrag()
+    {
+        foreach (var mouseEvent in _mouseEvents)
+            if (mouseEvent is IMouseDrag iEvent)
+                iEvent.OnMouseDrag_Redirected(gameObject);
     }
 }

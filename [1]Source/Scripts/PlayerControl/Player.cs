@@ -16,14 +16,25 @@ namespace Scripts.PlayerControl
         public List<MovingMode> selectableMovingModes = new List<MovingMode>();
         [HideInInspector] public int selectedMovingMode;
 
-        public MovingMode MovingMode => selectableMovingModes.Count > selectedMovingMode && selectedMovingMode != -1
-            ? selectableMovingModes[selectedMovingMode]
-            : null;
+        public MovingMode MovingMode =>
+            _movingMode == null
+                ? selectableMovingModes.Count > selectedMovingMode && selectedMovingMode != -1
+                    ? selectableMovingModes[selectedMovingMode]
+                    : null
+                : _movingMode;
+
+        private MovingMode _movingMode;
+
+        public void SetMovingMode(MovingMode movingMode)
+        {
+            _movingMode = movingMode;
+            Setup();
+        }
 
         private void Awake()
         {
             Setup();
-            MovingMode.SetCollider();
+            if (MovingMode) MovingMode.SetCollider();
         }
 
         private void OnValidate() => Setup();
@@ -44,7 +55,7 @@ namespace Scripts.PlayerControl
         public void SetEnable(bool value)
         {
             enabled = value;
-            cam.gameObject.SetActive(value);
+//            cam.gameObject.SetActive(value);
         }
     }
 }

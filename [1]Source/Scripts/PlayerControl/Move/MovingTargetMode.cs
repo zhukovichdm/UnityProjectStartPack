@@ -11,6 +11,7 @@ namespace Scripts.PlayerControl.Move
 
         [SerializeField] private Vector2 minMaxDistance;
         [Range(0, 1)] public float smoothZoom = 0.1f;
+        [Range(0, 1)] public float stepZoom = 0.1f;
         private Vector3 _prePosition;
 
         public MovingTargetMode()
@@ -18,7 +19,6 @@ namespace Scripts.PlayerControl.Move
             bodyScale = new Vector3(1f, 1f, 1f);
             UseGravity = false;
             ColliderType = null;
-            ;
             CamPosition = new Vector3(0f, 0f, 0f);
         }
 
@@ -33,7 +33,7 @@ namespace Scripts.PlayerControl.Move
             if (Math.Abs(delta) > 0)
             {
                 var pos = _prePosition;
-                pos.z = Mathf.Clamp(pos.z + delta, minMaxDistance.x, minMaxDistance.y);
+                pos.z = Mathf.Clamp(pos.z + stepZoom * Math.Sign(delta), minMaxDistance.x, minMaxDistance.y);
                 _prePosition = pos;
             }
 
