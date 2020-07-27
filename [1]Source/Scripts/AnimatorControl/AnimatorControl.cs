@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Scripts.System;
+using UnityEditor.Presets;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -38,36 +39,57 @@ namespace Scripts.Behaviours
         // Хранит InstanceId всех коллайдеров. (Key - InstanceId GameObject объекта на котором имеется коллайдер. Value - InstanceId GameObject родителя с аниматором)
         private readonly Dictionary<int, int> _instancesId = new Dictionary<int, int>();
 
+        public void ApplyPreset(Preset preset)
+        {
+            ResetAll();
+            preset.ApplyTo(this);
+            Initialize();
+        }
+
         private void Awake()
         {
             MouseEventsRedirection.RedirectFromChildObjects(this);
+            Initialize();
+        }
 
+        private void Initialize()
+        {
             animatorSystems.Clear();
+            _instancesId.Clear();
+
             GenerateList(animatorStructs);
 
             foreach (var animatorSystem in animatorSystems)
             {
                 animatorSystem.Initialize(this);
                 animatorSystem.UpdateParameters();
-            }
-        }
 
-        private void GenerateList(List<AnimatorStruct> structs)
-        {
-            foreach (var item in structs)
+                foreach (var child in animatorSystem.animator.GetComponentsInChildren<Collider>())
+                    _instancesId.Add(child.gameObject.GetInstanceID(),
+                        animatorSystem.animator.gameObject.GetInstanceID());
+            }
+
+            ModeChanged();
+
+            void GenerateList(List<AnimatorStruct> structs)
             {
-                animatorSystems.Add(item.animatorSystem);
-                if (item.animatorStructs.Count != 0)
-                    GenerateList(item.animatorStructs);
+                foreach (var item in structs)
+                {
+                    animatorSystems.Add(item.animatorSystem);
+                    if (item.animatorStructs.Count != 0)
+                        GenerateList(item.animatorStructs);
+                }
             }
         }
 
-        public void Start()
+        public void ModeChanged()
         {
             _id = 0;
             _instanceId = 0;
             _direction = AnimationDirection.ToBeginning;
-            _instancesId.Clear();
+
+            foreach (var animatorSystem in animatorSystems)
+                animatorSystem.actionPlayback_End.Unsubscribe(Reverse_QueueMode_Next);
 
             switch (mode)
             {
@@ -75,15 +97,7 @@ namespace Scripts.Behaviours
                     foreach (var animatorSystem in animatorSystems)
                         animatorSystem.actionPlayback_End.Subscribe(Reverse_QueueMode_Next);
                     break;
-                default:
-                    foreach (var animatorSystem in animatorSystems)
-                        animatorSystem.actionPlayback_End.Unsubscribe(Reverse_QueueMode_Next);
-                    break;
             }
-
-            foreach (var animatorSystem in animatorSystems)
-            foreach (var child in animatorSystem.animator.GetComponentsInChildren<Collider>())
-                _instancesId.Add(child.gameObject.GetInstanceID(), animatorSystem.animator.gameObject.GetInstanceID());
         }
 
         private void OnEnable()
@@ -104,6 +118,12 @@ namespace Scripts.Behaviours
         {
             foreach (var animatorSystem in animatorSystems)
                 animatorSystem.SetSignAndPlayback(direction);
+        }
+
+        public void ResetAll()
+        {
+            foreach (var animatorSystem in animatorSystems)
+                animatorSystem.Reset();
         }
 
         public void Reverse_AllMode()
@@ -154,22 +174,33 @@ namespace Scripts.Behaviours
 
         private void OnMouseOver() => OnMouseOver_Redirected(gameObject);
 
+        private static GameObject _mouseDownTarget;
+
         public void OnMouseOver_Redirected(GameObject target)
         {
             if (ignoreUi && EventSystem.current.IsPointerOverGameObject()) return;
-            if (Input.GetMouseButtonDown((int) inputButton) == false || useInputButton == false) return;
-            if (_instancesId.ContainsKey(target.GetInstanceID()) == false) return;
-            switch (mode)
+//            if (Input.GetMouseButtonDown((int) inputButton) == false || useInputButton == false) return;
+
+            if (Input.GetMouseButtonDown((int) inputButton))
+                _mouseDownTarget = target;
+
+            if (Input.GetMouseButtonUp((int) inputButton) && _mouseDownTarget == target || useInputButton == false)
             {
-                case AnimationModes.All:
-                    Reverse_AllMode();
-                    break;
-                case AnimationModes.Queue:
-                    Reverse_QueueMode_ToId(_instancesId[target.GetInstanceID()]);
-                    break;
-                case AnimationModes.Target:
-                    Reverse_TargetMode(_instancesId[target.GetInstanceID()]);
-                    break;
+                _mouseDownTarget = null;
+
+                if (_instancesId.ContainsKey(target.GetInstanceID()) == false) return;
+                switch (mode)
+                {
+                    case AnimationModes.All:
+                        Reverse_AllMode();
+                        break;
+                    case AnimationModes.Queue:
+                        Reverse_QueueMode_ToId(_instancesId[target.GetInstanceID()]);
+                        break;
+                    case AnimationModes.Target:
+                        Reverse_TargetMode(_instancesId[target.GetInstanceID()]);
+                        break;
+                }
             }
         }
     }

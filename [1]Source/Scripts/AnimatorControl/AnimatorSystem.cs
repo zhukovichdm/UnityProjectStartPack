@@ -110,6 +110,7 @@ namespace Scripts.System
             if (_coroutine != null) mono.StopCoroutine(_coroutine);
             isPlayback = false;
             State = 0;
+            animator.SetFloat(allAnimatorParameters[selectedParameter], State);
             Sign = AnimationDirection.ToBeginning;
         }
 

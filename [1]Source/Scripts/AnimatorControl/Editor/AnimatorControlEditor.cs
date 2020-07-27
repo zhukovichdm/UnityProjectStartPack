@@ -47,7 +47,7 @@ public class AnimatorControlEditor : Editor
             var popup = (AnimationModes) EditorGUILayout.Popup((int) control.mode, _modeList);
             if (popup == control.mode) return;
             control.mode = popup;
-            control.Start();
+            control.ModeChanged();
         });
 
         if (GUILayout.Button("UpdateAllParameters"))
