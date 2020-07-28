@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Scripts.System;
-using UnityEditor.Presets;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -39,24 +38,31 @@ namespace Scripts.Behaviours
         // Хранит InstanceId всех коллайдеров. (Key - InstanceId GameObject объекта на котором имеется коллайдер. Value - InstanceId GameObject родителя с аниматором)
         private readonly Dictionary<int, int> _instancesId = new Dictionary<int, int>();
 
-        public void ApplyPreset(Preset preset)
-        {
-            ResetAll();
-            preset.ApplyTo(this);
-            Initialize();
-        }
+//        public void ApplyPreset(Preset preset)
+//        {
+//            ResetAll();
+//            preset.ApplyTo(this);
+//            Initialize();
+//        }
 
         private void Awake()
         {
-            MouseEventsRedirection.RedirectFromChildObjects(this);
             Initialize();
         }
 
-        private void Initialize()
+        public void DeInitialize()
         {
+            ResetAll();
+            MouseEventsRedirection.StopRedirectFromChildObjects(this);
             animatorSystems.Clear();
             _instancesId.Clear();
+        }
 
+        public void Initialize()
+        {
+            MouseEventsRedirection.RedirectFromChildObjects(this);
+            animatorSystems.Clear();
+            _instancesId.Clear();
             GenerateList(animatorStructs);
 
             foreach (var animatorSystem in animatorSystems)

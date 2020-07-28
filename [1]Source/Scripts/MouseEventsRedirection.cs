@@ -56,10 +56,25 @@ public class MouseEventsRedirection : MonoBehaviour
         }
     }
 
+    public static void StopRedirectFromChildObjects(IMouseEvent target)
+    {
+        foreach (var child in ((MonoBehaviour) target).GetComponentsInChildren<Collider>())
+        {
+            if (child.TryGetComponent<MouseEventsRedirection>(out var redirection))
+                redirection.Remove(target);
+        }
+    }
+
     public void Add(IMouseEvent mouseEvent)
     {
         if (_mouseEvents.Contains(mouseEvent) == false)
             _mouseEvents.Add(mouseEvent);
+    }
+
+    public void Remove(IMouseEvent mouseEvent)
+    {
+        if (_mouseEvents.Contains(mouseEvent))
+            _mouseEvents.Remove(mouseEvent);
     }
 
     private void OnMouseUpAsButton()

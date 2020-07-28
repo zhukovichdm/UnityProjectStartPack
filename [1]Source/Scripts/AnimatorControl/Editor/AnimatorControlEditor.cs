@@ -129,7 +129,12 @@ public class AnimatorControlEditor : Editor
         {
             animSys.frameRate = EditorGUILayout.FloatField("FrameRate", animSys.frameRate);
             if (animSys.allAnimatorParameters.Count > animSys.selectedParameter)
-                animSys.SetState(EditorGUILayout.Slider("State", animSys.State, 0, 1));
+            {
+                var newState = EditorGUILayout.Slider("State", animSys.State, 0, 1);
+                if (Math.Abs(newState - animSys.State) > 0)
+                    animSys.SetState(newState);
+            }
+
             animSys.playFromStart = EditorGUILayout.Toggle("PlayFromStart", animSys.playFromStart);
         });
 
