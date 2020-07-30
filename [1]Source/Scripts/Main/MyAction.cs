@@ -14,15 +14,7 @@ public class MyAction
     }
 
     public void Unsubscribe(Action action) => actions.Remove(action);
-
-    public void Publish()
-    {
-        for (var i = 0; i < actions.Count; i++)
-        {
-            actions[i].Invoke();
-        }
-    }
-
+    public void Publish() => actions.ForEach(action => action.Invoke());
     public void ClearListener() => actions.Clear();
     public int GetCount() => actions.Count;
 }
@@ -39,15 +31,7 @@ public class MyAction<T>
     }
 
     public void Unsubscribe(Action<T> action) => actions.Remove(action);
-
-    public void Publish(T value)
-    {
-        for (var i = 0; i < actions.Count; i++)
-        {
-            actions[i].Invoke(value);
-        }
-    }
-
+    public void Publish(T value) => actions.ForEach(action => action.Invoke(value));
     public void ClearListener() => actions.Clear();
     public int GetCount() => actions.Count;
 }
